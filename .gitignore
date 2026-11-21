@@ -1,0 +1,35 @@
+﻿# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+
+# IDE
+.idea/
+.vscode/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+esp32_dep/config.py
+
+# Local databases and application data
+*.db
+*.sqlite
+*.sqlite3
+data/
+notes.db
+
+# Audio, uploads, generated files and logs
+*.wav
+*.ogg
+*.mp3
+*.flac
+uploads/
+inbox/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

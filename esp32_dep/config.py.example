@@ -1,0 +1,9 @@
+# Copy to config.py on the device and fill in locally. Do not commit real credentials.
+WIFI_SSID = "CHANGE_ME"
+WIFI_PASS = "CHANGE_ME"
+UPLOAD_TOKEN = "CHANGE_ME"
+
+PC_IP = "192.168.0.230"
+PC_PORT = 8000
+FILE_PATH = "/sd/rec.wav"
+SAMPLE_RATE = 8000
