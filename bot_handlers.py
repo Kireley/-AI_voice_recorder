@@ -12,7 +12,9 @@ from aiogram.types import (
 from config import CHAT_ID
 from db import save_note, get_all_tags, get_notes_by_tag, delete_note
 from yandex_api import transcribe_yandex, format_punctuation
+from command_router import CommandRouter
 
+command_router = CommandRouter()
 
 router = Router()
 
@@ -25,19 +27,29 @@ format_kb = InlineKeyboardMarkup(
 )
 
 
-def parse_remember_command(raw_text: str):
-    match = re.match(r"^\s*запомни[,.\s]+(.*)$", raw_text, flags=re.IGNORECASE | re.DOTALL)
-    if not match:
-        return None, None
 
-    remainder = match.group(1).strip()
-    if not remainder:
-        return "", ""
 
-    parts = remainder.split(maxsplit=1)
-    tag = re.sub(r"[^\wа-яА-ЯёЁ-]", "", parts[0]).lower()
-    content = parts[1].strip() if len(parts) > 1 else ""
-    return tag, content
+
+# Обновлённая функция process_recognized_text:
+async def process_recognized_text(bot: Bot, target_msg: Message, raw_text: str):
+    if not raw_text:
+        await target_msg.reply("🔇 Речь не распознана.")
+        return
+
+    # Пытаемся выполнить голосовой триггер из папки triggers
+    is_handled = await command_router.dispatch(bot, target_msg, raw_text)
+    if is_handled:
+        return
+
+    # Действие по умолчанию (обычная расшифровка)
+    header = "📝 "
+    max_len = 4096 - len(header)
+    if len(raw_text) <= max_len:
+        await target_msg.reply(f"{header}{raw_text}", reply_markup=format_kb)
+    else:
+        await target_msg.reply(f"{header}{raw_text[:max_len]}", reply_markup=format_kb)
+        for i in range(max_len, len(raw_text), 4096):
+            await bot.send_message(CHAT_ID, raw_text[i : i + 4096], reply_markup=format_kb)
 
 
 def build_notes_page(tag: str, offset: int = 0) -> tuple[str, InlineKeyboardMarkup | None]:

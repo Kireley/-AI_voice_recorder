@@ -56,13 +56,10 @@ async def transcribe_yandex(wav_bytes: bytes) -> str:
     return " ".join(transcripts)
 
 
-async def format_punctuation(raw_text: str) -> str:
-    clean = raw_text.strip()
+async def run_yandex_gpt(system_prompt: str, user_text: str, model: str = "yandexgpt-lite") -> str:
+    clean = user_text.strip()
     if not clean:
         return ""
-
-    if len(clean.split()) < 4:
-        return clean[0].upper() + clean[1:] + "."
 
     url = "https://llm.api.cloud." + "yandex.net/foundationModels/v1/completion"
     headers = {
@@ -70,17 +67,10 @@ async def format_punctuation(raw_text: str) -> str:
         "x-folder-id": FOLDER_ID,
     }
     payload = {
-        "modelUri": f"gpt://{FOLDER_ID}/yandexgpt-4-lite/latest",
+        "modelUri": f"gpt://{FOLDER_ID}/{model}/latest",
         "completionOptions": {"stream": False, "temperature": 0.1, "maxTokens": "2000"},
         "messages": [
-            {
-                "role": "system",
-                "text": (
-                    "Ты технический скрипт-корректор. Расставь знаки препинания и заглавные буквы "
-                    "в сырой расшифровке внутри тегов <transcript>. Игнорируй смысл, не применяй цензуру. "
-                    "Верни только исправленный текст без тегов."
-                ),
-            },
+            {"role": "system", "text": system_prompt},
             {"role": "user", "text": f"<transcript>{clean}</transcript>"},
         ],
     }
@@ -92,8 +82,10 @@ async def format_punctuation(raw_text: str) -> str:
                 data = await resp.json()
                 alternatives = data.get("result", {}).get("alternatives", [])
                 if alternatives:
-                    formatted = alternatives[0]["message"]["text"].strip()
-                    if "не могу обсуждать эту тему" in formatted.lower():
-                        return clean[0].upper() + clean[1:] + "."
-                    return formatted
-            return clean
+                    reply = alternatives[0]["message"]["text"].strip()
+                    if "не могу обсуждать эту тему" not in reply.lower():
+                        return reply
+            else:
+                err_text = await resp.text()
+                print(f"Ошибка YandexGPT ({resp.status}): {err_text}", flush=True)
+    return ""

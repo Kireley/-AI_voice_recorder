@@ -30,6 +30,9 @@ uploads/
 inbox/
 *.log
 
+# Archives
+*.zip
+
 # OS files
 .DS_Store
 Thumbs.db
