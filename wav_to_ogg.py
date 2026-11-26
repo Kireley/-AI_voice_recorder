@@ -1,8 +1,17 @@
 import asyncio
+import logging
+import shutil
+
+logger = logging.getLogger(__name__)
+
 
 async def wav_to_ogg_opus(wav_bytes: bytes) -> bytes:
+    if shutil.which("ffmpeg") is None:
+        raise RuntimeError("ffmpeg не найден в PATH — конвертация в OGG/Opus невозможна")
+
     process = await asyncio.create_subprocess_exec(
         "ffmpeg",
+        "-hide_banner", "-loglevel", "error", "-nostdin",
         "-i", "pipe:0",          # читаем WAV из памяти
         "-c:a", "libopus",       # кодек Opus (обязателен для голосовых в Telegram)
         "-b:a", "32k",           # битрейт 32 кбит/с (отличное качество для голоса)

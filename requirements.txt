@@ -1,2 +1,2 @@
-aiohttp
-aiogram
+aiohttp>=3.9,<4
+aiogram>=3.13,<4

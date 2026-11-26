@@ -5,11 +5,13 @@ import struct
 import time
 import network
 from machine import Pin, I2S, SDCard
-from config import WIFI_SSID, WIFI_PASS, FILE_PATH, SAMPLE_RATE, UPLOAD_TOKEN
+from config import (
+    WIFI_SSID, WIFI_PASS, FILE_PATH, SAMPLE_RATE, UPLOAD_TOKEN, PC_IP, PC_PORT
+)
 
-# --- НАСТРОЙКИ СЕРВЕРА ---
-PC_IP = "192.168.0.230"
-PC_PORT = 8000
+# Максимальная длительность одной записи: защита от зажатой кнопки
+MAX_RECORD_SECONDS = 120
+MAX_RECORD_BYTES = SAMPLE_RATE * 2 * MAX_RECORD_SECONDS
 
 # --- ПИНЫ УПРАВЛЕНИЯ ---
 button = Pin(4, Pin.IN, Pin.PULL_UP)  # Кнопка между GPIO 4 и GND
@@ -76,6 +78,9 @@ def record_while_pressed():
             if n > 0:
                 f.write(buf[:n])
                 total_bytes += n
+                if total_bytes >= MAX_RECORD_BYTES:
+                    print("Достигнут лимит записи, останавливаемся")
+                    break
 
         f.seek(0)
         f.write(create_wav_header(SAMPLE_RATE, 16, 1, total_bytes))
@@ -127,8 +132,7 @@ def send_and_delete(filepath):
                         continue
                     sent += res
                 total_sent += n
-                if total_sent % 65536 == 0:
-                    led.value(not led.value())
+                led.value(not led.value())
 
         resp = sock.readline().decode()
         dt = time.ticks_diff(time.ticks_ms(), t0) / 1000
